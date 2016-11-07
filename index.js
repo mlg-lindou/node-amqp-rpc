@@ -21,6 +21,7 @@ function rpc(opt)   {
     this.__results_queue = null;
     this.__results_queue_name = null;
     this.__results_cb = {};
+    this.__rpcTimeouts = {};
     this.__make_results_cb = [];
 
     this.__cmds = {};
@@ -178,7 +179,9 @@ rpc.prototype.__onResult = function(message, headers, deliveryInfo)   {
     if(! this.__results_cb[ deliveryInfo.correlationId ]) return;
 
     var cb = this.__results_cb[ deliveryInfo.correlationId ];
-
+    
+    clearTimeout(this.__rpcTimeouts[deliveryInfo.correlationId]);
+    
     var args = [];
     if(Array.isArray(message) ) {
 
@@ -244,6 +247,10 @@ rpc.prototype.call = function(cmd, params, cb, context, options) {
                             }
                         }
                     );
+                    
+                    $this.__rpcTimeouts[corr_id] = setTimeout(function() {
+                        cb(new Error('server has no response'));
+                    }, 5000);
                 });
             });
 
